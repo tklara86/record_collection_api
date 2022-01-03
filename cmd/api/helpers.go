@@ -18,14 +18,17 @@ func (app *application) readIDParam(r *http.Request) (int64, error) {
 	return id, nil
 }
 
+type envelope map[string]interface{}
+
 func (app *application) writeJSON(w http.ResponseWriter, status int,
-	data interface{}, headers http.Header) error {
+	data envelope, headers http.Header) error {
 
 	json, err := json2.MarshalIndent(data, "", "  ")
 	if err != nil {
 		return err
 	}
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(status)
 	_, err = w.Write(json)
 	if err != nil {

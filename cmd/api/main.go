@@ -11,10 +11,6 @@ import (
 
 const version = "1.0.0"
 
-type Msg struct {
-	Message string
-}
-
 // config struct holds all the configuration settings for application
 type config struct {
 	port int
@@ -30,7 +26,7 @@ type application struct {
 func main() {
 	var cfg config
 
-	flag.IntVar(&cfg.port, "port", 4000, "API server port")
+	flag.IntVar(&cfg.port, "port", 9000, "API server port")
 	flag.StringVar(&cfg.env, "env", "development", "Environment (development|staging|production)")
 
 	flag.Parse()
