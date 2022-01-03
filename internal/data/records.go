@@ -1,6 +1,9 @@
 package data
 
-import "time"
+import (
+	"github.com/tklara86/record_collection_api/internal/validator"
+	"time"
+)
 
 // Record model
 type Record struct {
@@ -50,4 +53,13 @@ type RecordArtist struct {
 	RecordID  int64     `json:"record_id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+}
+
+func ValidateRecord(v *validator.Validator, record *Record) {
+	v.Check(record.Title != "", "title", "must be provided")
+	v.Check(len(record.Title) <= 500, "title", "must not be more than 500 bytes long")
+
+	v.Check(record.Label != "", "label", "must be provided")
+	v.Check(record.Year != 0, "year", "must be provided")
+	v.Check(record.Cover != "", "cover", "must be provided")
 }

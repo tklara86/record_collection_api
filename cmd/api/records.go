@@ -1,9 +1,9 @@
 package main
 
 import (
-	json2 "encoding/json"
 	"fmt"
 	"github.com/tklara86/record_collection_api/internal/data"
+	"github.com/tklara86/record_collection_api/internal/validator"
 	"net/http"
 	"time"
 )
@@ -12,17 +12,30 @@ import (
 func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Request) {
 
 	var input struct {
-		RecordID int64         `json:"record_id"`
-		Title    string        `json:"title"`
-		Label    string        `json:"label"`
-		Year     int32         `json:"year"`
-		Cover    string        `json:"cover"`
-		Genres   []interface{} `json:"genres,omitempty"`
+		RecordID int64  `json:"record_id"`
+		Title    string `json:"title"`
+		Label    string `json:"label"`
+		Year     int32  `json:"year"`
+		Cover    string `json:"cover"`
 	}
 
-	err := json2.NewDecoder(r.Body).Decode(&input)
+	err := app.readJSON(w, r, &input)
 	if err != nil {
-		app.errorResponse(w, r, http.StatusBadRequest, err.Error())
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	record := &data.Record{
+		Title: input.Title,
+		Label: input.Label,
+		Year:  input.Year,
+		Cover: input.Cover,
+	}
+
+	v := validator.New()
+
+	if data.ValidateRecord(v, record); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
 
