@@ -12,11 +12,12 @@ import (
 func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Request) {
 
 	var input struct {
-		RecordID int64  `json:"record_id"`
-		Title    string `json:"title"`
-		Label    string `json:"label"`
-		Year     int32  `json:"year"`
-		Cover    string `json:"cover"`
+		RecordID    int64              `json:"record_id"`
+		Title       string             `json:"title"`
+		Label       string             `json:"label"`
+		Year        int32              `json:"year"`
+		Cover       string             `json:"cover"`
+		RecordGenre []data.RecordGenre `json:"record_genre"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -30,6 +31,18 @@ func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Reque
 		Label: input.Label,
 		Year:  input.Year,
 		Cover: input.Cover,
+		RecordGenre: &[]data.RecordGenre{
+			{
+				ID:       2,
+				RecordID: 1,
+				GenreID:  1,
+			},
+			{
+				ID:       3,
+				RecordID: 1,
+				GenreID:  2,
+			},
+		},
 	}
 
 	v := validator.New()
