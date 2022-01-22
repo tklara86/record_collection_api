@@ -1,6 +1,8 @@
 package data
 
 import (
+	"database/sql"
+	"errors"
 	"github.com/tklara86/record_collection_api/internal/validator"
 	"time"
 )
@@ -62,4 +64,51 @@ func ValidateRecord(v *validator.Validator, record *Record) {
 	v.Check(record.Label != "", "label", "must be provided")
 	v.Check(record.Year != 0, "year", "must be provided")
 	v.Check(record.Cover != "", "cover", "must be provided")
+}
+
+// RecordModel a struct type which wraps a sql.DB connection pool.
+type RecordModel struct {
+	DB *sql.DB
+}
+
+// CreateRecord creates a new record in the record table
+func (m RecordModel) CreateRecord(record *Record) error {
+	q := `INSERT INTO records (title, label, year, cover) VALUES ($1, $2, $3, $4) RETURNING record_id, created_at`
+
+	args := []interface{}{record.Title, record.Label, record.Year, record.Cover}
+
+	return m.DB.QueryRow(q, args...).Scan(&record.RecordID, &record.CreatedAt)
+}
+
+// GetRecord fetches specific record from the record table
+func (m RecordModel) GetRecord(id int64) (*Record, error) {
+	q := `SELECT * FROM 
+          records
+          WHERE record_id = $1`
+
+	var record Record
+
+	err := m.DB.QueryRow(q, id).Scan(&record.RecordID, &record.Title, &record.Label,
+		&record.Year, &record.Cover, &record.CreatedAt, &record.UpdatedAt)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrorRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &record, nil
+}
+
+// UpdateRecord updates specific record in the record table
+func (m RecordModel) UpdateRecord(record *Record) error {
+	return nil
+}
+
+// DeleteRecord deletes specific record
+func (m RecordModel) DeleteRecord(id int64) error {
+	return nil
 }
