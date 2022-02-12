@@ -3,9 +3,19 @@ package data
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/tklara86/record_collection_api/internal/validator"
+	"strconv"
 	"time"
 )
+
+//WITH the_record AS (
+//INSERT INTO records (title, label, year, cover) VALUES ('sdsd', 'sdsd', 1987, 'sdsdsd') RETURNING record_id
+//)
+//INSERT INTO record_genres (record_id, genre_id) VALUES
+//((SELECT record_id from the_record), 1),
+//((SELECT record_id from the_record), 2),
+//((SELECT record_id from the_record), 3)
 
 // Record model
 type Record struct {
@@ -73,11 +83,11 @@ type RecordModel struct {
 
 // CreateRecord creates a new record in the record table
 func (m RecordModel) CreateRecord(record *Record) error {
-	q := `INSERT INTO records (title, label, year, cover) VALUES ($1, $2, $3, $4) RETURNING record_id, created_at`
+	q := `INSERT INTO records (title, label, year, cover) VALUES ($1, $2, $3, $4) RETURNING record_id`
 
 	args := []interface{}{record.Title, record.Label, record.Year, record.Cover}
 
-	return m.DB.QueryRow(q, args...).Scan(&record.RecordID, &record.CreatedAt)
+	return m.DB.QueryRow(q, args...).Scan(&record.RecordID)
 }
 
 // GetRecord fetches specific record from the record table
@@ -111,4 +121,29 @@ func (m RecordModel) UpdateRecord(record *Record) error {
 // DeleteRecord deletes specific record
 func (m RecordModel) DeleteRecord(id int64) error {
 	return nil
+}
+
+// CreateGenreRecords
+func (m RecordModel) CreateGenreRecords(recordGenre []RecordGenre) error {
+	q := `INSERT INTO record_genres(record_id,genre_id) VALUES `
+
+	var args []interface{}
+
+	for i, v := range recordGenre {
+		args = append(args, v.RecordID, v.GenreID)
+		numFields := 2
+		n := i * numFields
+
+		q += `(`
+		for j := 0; j < numFields; j++ {
+			q += `$` + strconv.Itoa(n+j+1) + `,`
+		}
+		q = q[:len(q)-1] + `),`
+
+	}
+	q = q[:len(q)-1]
+
+	fmt.Println(q)
+
+	return m.DB.QueryRow(q, args...).Scan(recordGenre)
 }
