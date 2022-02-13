@@ -8,15 +8,18 @@ import (
 	"net/http"
 )
 
+//INSERT INTO genres (genre_name) VALUES ('Classical'), ('Jazz'), ('Rock');
 // createRecordHandler creates new record
 func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Request) {
 
 	var input struct {
-		RecordID int64  `json:"record_id"`
-		Title    string `json:"title"`
-		Label    string `json:"label"`
-		Year     int32  `json:"year"`
-		Cover    string `json:"cover"`
+		RecordID    int64              `json:"record_id"`
+		Title       string             `json:"title"`
+		Label       string             `json:"label"`
+		Year        int32              `json:"year"`
+		Cover       string             `json:"cover"`
+		GenreID     int64              `json:"genre_id"`
+		RecordGenre []data.RecordGenre `json:"record_genre"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -30,49 +33,17 @@ func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Reque
 		Label: input.Label,
 		Year:  input.Year,
 		Cover: input.Cover,
+		RecordGenre: &[]data.RecordGenre{},
 	}
 
 	v := validator.New()
 
-	if data.ValidateRecord(v, record); !v.Valid() {
+	if data.ValidateRecord(v, record, *record.RecordGenre); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
 
-	err = app.models.Records.CreateRecord(record)
-	if err != nil {
-		app.serverErrorResponse(w, r, err)
-		return
-	}
-
-	recordGenre := &[]data.RecordGenre{
-		{
-			RecordID: record.RecordID,
-			GenreID:  2,
-		},
-		{
-			RecordID: record.RecordID,
-			GenreID:  3,
-		},
-		{
-			RecordID: record.RecordID,
-			GenreID:  1,
-		},
-		{
-			RecordID: record.RecordID,
-			GenreID:  4,
-		},
-		{
-			RecordID: record.RecordID,
-			GenreID:  5,
-		},
-		{
-			RecordID: record.RecordID,
-			GenreID:  6,
-		},
-	}
-
-	err = app.models.Records.CreateGenreRecords(*recordGenre)
+	err = app.models.Records.CreateRecord(record, *record.RecordGenre)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return

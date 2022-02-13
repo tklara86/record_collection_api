@@ -32,9 +32,12 @@ CREATE TABLE IF NOT EXISTS record_genres (
                                              created_at timestamp(0) with time zone NOT NULL DEFAULT NOW(),
                                              updated_at timestamp(0) with time zone NOT NULL DEFAULT NOW(),
                                              CONSTRAINT fk_records
-                                             FOREIGN KEY (record_id) REFERENCES records(record_id) ON DELETE CASCADE,
+                                             FOREIGN KEY (record_id) REFERENCES records
+                                                 (record_id) ON DELETE CASCADE ON UPDATE CASCADE,
                                              CONSTRAINT fk_genres
-                                             FOREIGN KEY (genre_id) REFERENCES genres(genre_id) ON DELETE CASCADE
+                                             FOREIGN KEY (genre_id) REFERENCES genres(genre_id)
+                                                 ON DELETE CASCADE
+                                                ON UPDATE CASCADE
 
 );
 

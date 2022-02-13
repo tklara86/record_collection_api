@@ -54,8 +54,8 @@ type RecordGenre struct {
 	ID        int64     `json:"id"`
 	RecordID  int64     `json:"record_id"`
 	GenreID   int64     `json:"genre_id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
 }
 
 // RecordArtist model
@@ -67,14 +67,33 @@ type RecordArtist struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-func ValidateRecord(v *validator.Validator, record *Record) {
+// ValidateRecord validates record fields
+func ValidateRecord(v *validator.Validator, record *Record, recordGenre []RecordGenre) {
 	v.Check(record.Title != "", "title", "must be provided")
 	v.Check(len(record.Title) <= 500, "title", "must not be more than 500 bytes long")
 
 	v.Check(record.Label != "", "label", "must be provided")
 	v.Check(record.Year != 0, "year", "must be provided")
 	v.Check(record.Cover != "", "cover", "must be provided")
+
+	if len(recordGenre) <= 0 {
+		v.AddError("genre", "at least one genre must be provided")
+		//v.Check(recordGenre, "genre", "at least one genre must be selected")
+	}
+	//for _, r := range recordGenre {
+	//	v.Check(r.GenreID, "genre", "at least one genre must be selected")
+	//
+	//}
 }
+
+// ValidateRecordGenre validates record genres fields
+//func ValidateRecordGenre(v *validator.Validator, recordGenre []RecordGenre) {
+//
+//	for _, r := range recordGenre {
+//		v.CheckForID(r.GenreID, "genre", "at least one genre must be selected")
+//	}
+//
+//}
 
 // RecordModel a struct type which wraps a sql.DB connection pool.
 type RecordModel struct {
@@ -82,12 +101,52 @@ type RecordModel struct {
 }
 
 // CreateRecord creates a new record in the record table
-func (m RecordModel) CreateRecord(record *Record) error {
-	q := `INSERT INTO records (title, label, year, cover) VALUES ($1, $2, $3, $4) RETURNING record_id`
+func (m RecordModel) CreateRecord(record *Record, recordGenre []RecordGenre) error {
+	q := `WITH the_record AS (
+    	INSERT INTO records (title, label, year, cover) VALUES ($1, $2, $3, $4) RETURNING record_id
+	) 
+	INSERT INTO record_genres (record_id, genre_id) VALUES `
 
 	args := []interface{}{record.Title, record.Label, record.Year, record.Cover}
 
+	for i, v := range recordGenre {
+		args = append(args, v.GenreID)
+		numFields := 1
+		n := (i * numFields) + 4
+
+		for j := 0; j < numFields; j++ {
+			q += `((SELECT record_id from the_record),` + `$` + strconv.Itoa(n+j+1) + `),`
+		}
+		q = q[:len(q)-1] + `,`
+	}
+	q = q[:len(q)-1]
+
+	fmt.Println(q)
+
 	return m.DB.QueryRow(q, args...).Scan(&record.RecordID)
+}
+
+// CreateGenreRecords creates genre records in the record_genres table
+func (m RecordModel) CreateGenreRecords(recordGenre []RecordGenre) error {
+	q := `INSERT INTO record_genres(record_id,genre_id) VALUES `
+
+	var args []interface{}
+
+	for i, v := range recordGenre {
+		args = append(args, v.RecordID, v.GenreID)
+		numFields := 2
+		n := i * numFields
+
+		q += `(`
+		for j := 0; j < numFields; j++ {
+			q += `$` + strconv.Itoa(n+j+1) + `,`
+		}
+		q = q[:len(q)-1] + `),`
+
+	}
+	q = q[:len(q)-1]
+
+	return m.DB.QueryRow(q, args...).Scan(recordGenre)
 }
 
 // GetRecord fetches specific record from the record table
@@ -121,29 +180,4 @@ func (m RecordModel) UpdateRecord(record *Record) error {
 // DeleteRecord deletes specific record
 func (m RecordModel) DeleteRecord(id int64) error {
 	return nil
-}
-
-// CreateGenreRecords
-func (m RecordModel) CreateGenreRecords(recordGenre []RecordGenre) error {
-	q := `INSERT INTO record_genres(record_id,genre_id) VALUES `
-
-	var args []interface{}
-
-	for i, v := range recordGenre {
-		args = append(args, v.RecordID, v.GenreID)
-		numFields := 2
-		n := i * numFields
-
-		q += `(`
-		for j := 0; j < numFields; j++ {
-			q += `$` + strconv.Itoa(n+j+1) + `,`
-		}
-		q = q[:len(q)-1] + `),`
-
-	}
-	q = q[:len(q)-1]
-
-	fmt.Println(q)
-
-	return m.DB.QueryRow(q, args...).Scan(recordGenre)
 }

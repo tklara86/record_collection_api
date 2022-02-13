@@ -30,6 +30,12 @@ func (v *Validator) Check(ok bool, key, message string) {
 	}
 }
 
+func (v *Validator) CheckForID(id int64, key, message string) {
+	if id < 1 {
+		v.AddError(key, message)
+	}
+}
+
 func In(value string, list ...string) bool {
 	for i := range list {
 		if value == list[i] {
