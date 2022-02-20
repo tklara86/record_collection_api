@@ -13,13 +13,12 @@ import (
 func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Request) {
 
 	var input struct {
-		RecordID    int64              `json:"record_id"`
-		Title       string             `json:"title"`
-		Label       string             `json:"label"`
-		Year        int32              `json:"year"`
-		Cover       string             `json:"cover"`
-		GenreID     int64              `json:"genre_id"`
-		RecordGenre []data.RecordGenre `json:"record_genre"`
+		RecordID     int64              `json:"record_id"`
+		Title        string             `json:"title"`
+		Label        string             `json:"label"`
+		Year         int32              `json:"year"`
+		Cover        string             `json:"cover"`
+		RecordGenres []data.RecordGenre `json:"record_genres"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -28,22 +27,42 @@ func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	// mock the ids from form
+	genreSlices := []int64{2, 3, 1}
+
+	var genres []data.RecordGenre
+
+	for _, genreId := range genreSlices {
+
+		d := []data.RecordGenre{
+			{
+				GenreID: genreId,
+			},
+		}
+		genres = append(genres, d...)
+	}
+
 	record := &data.Record{
-		Title: input.Title,
-		Label: input.Label,
-		Year:  input.Year,
-		Cover: input.Cover,
-		RecordGenre: &[]data.RecordGenre{},
+		Title:        input.Title,
+		Label:        input.Label,
+		Year:         input.Year,
+		Cover:        input.Cover,
+		RecordGenres: genres,
 	}
 
 	v := validator.New()
 
-	if data.ValidateRecord(v, record, *record.RecordGenre); !v.Valid() {
+	if data.ValidateRecord(v, record, record.RecordGenres); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}
 
-	err = app.models.Records.CreateRecord(record, *record.RecordGenre)
+	err = app.models.Records.CreateRecord(record, record.RecordGenres)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return

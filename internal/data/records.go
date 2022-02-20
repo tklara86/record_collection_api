@@ -3,7 +3,6 @@ package data
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"github.com/tklara86/record_collection_api/internal/validator"
 	"strconv"
 	"time"
@@ -26,9 +25,7 @@ type Record struct {
 	Cover        string          `json:"cover"`
 	CreatedAt    time.Time       `json:"created_at"`
 	UpdatedAt    time.Time       `json:"updated_at"`
-	Genres       *[]Genres       `json:"genres,omitempty"`
-	Artists      *[]Artists      `json:"artists,omitempty"`
-	RecordGenre  *[]RecordGenre  `json:"record_genre,omitempty"`
+	RecordGenres []RecordGenre   `json:"record_genres,omitempty"`
 	RecordArtist *[]RecordArtist `json:"record_artist,omitempty"`
 }
 
@@ -76,10 +73,10 @@ func ValidateRecord(v *validator.Validator, record *Record, recordGenre []Record
 	v.Check(record.Year != 0, "year", "must be provided")
 	v.Check(record.Cover != "", "cover", "must be provided")
 
-	if len(recordGenre) <= 0 {
-		v.AddError("genre", "at least one genre must be provided")
-		//v.Check(recordGenre, "genre", "at least one genre must be selected")
-	}
+	//if len(recordGenre) < 1 {
+	//	v.AddError("genre", "at least one genre must be provided")
+	//	//v.Check(recordGenre, "genre", "at least one genre must be selected")
+	//}
 	//for _, r := range recordGenre {
 	//	v.Check(r.GenreID, "genre", "at least one genre must be selected")
 	//
@@ -121,7 +118,7 @@ func (m RecordModel) CreateRecord(record *Record, recordGenre []RecordGenre) err
 	}
 	q = q[:len(q)-1]
 
-	fmt.Println(q)
+	q += ` RETURNING record_id`
 
 	return m.DB.QueryRow(q, args...).Scan(&record.RecordID)
 }
