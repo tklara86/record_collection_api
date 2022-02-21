@@ -3,6 +3,7 @@ package data
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"github.com/tklara86/record_collection_api/internal/validator"
 	"strconv"
 	"time"
@@ -10,23 +11,31 @@ import (
 
 //WITH the_record AS (
 //INSERT INTO records (title, label, year, cover) VALUES ('sdsd', 'sdsd', 1987, 'sdsdsd') RETURNING record_id
-//)
+//),
+//
+//genre AS (
 //INSERT INTO record_genres (record_id, genre_id) VALUES
 //((SELECT record_id from the_record), 1),
 //((SELECT record_id from the_record), 2),
 //((SELECT record_id from the_record), 3)
+//)
+//
+//INSERT INTO record_artists (record_id,artist_id) VALUES
+//((SELECT record_id from the_record), 1),
+//((SELECT record_id from the_record), 2),
+//((SELECT record_id from the_record), 3);
 
 // Record model
 type Record struct {
-	RecordID     int64           `json:"record_id"`
-	Title        string          `json:"title"`
-	Label        string          `json:"label"`
-	Year         int32           `json:"year"`
-	Cover        string          `json:"cover"`
-	CreatedAt    time.Time       `json:"created_at"`
-	UpdatedAt    time.Time       `json:"updated_at"`
-	RecordGenres []RecordGenre   `json:"record_genres,omitempty"`
-	RecordArtist *[]RecordArtist `json:"record_artist,omitempty"`
+	RecordID      int64          `json:"record_id"`
+	Title         string         `json:"title"`
+	Label         string         `json:"label"`
+	Year          int32          `json:"year"`
+	Cover         string         `json:"cover"`
+	CreatedAt     time.Time      `json:"created_at"`
+	UpdatedAt     time.Time      `json:"updated_at"`
+	RecordGenres  []RecordGenre  `json:"record_genres,omitempty"`
+	RecordArtists []RecordArtist `json:"record_artist,omitempty"`
 }
 
 // Genres model
@@ -73,10 +82,10 @@ func ValidateRecord(v *validator.Validator, record *Record, recordGenre []Record
 	v.Check(record.Year != 0, "year", "must be provided")
 	v.Check(record.Cover != "", "cover", "must be provided")
 
-	//if len(recordGenre) < 1 {
-	//	v.AddError("genre", "at least one genre must be provided")
-	//	//v.Check(recordGenre, "genre", "at least one genre must be selected")
-	//}
+	if len(recordGenre) < 1 {
+		v.AddError("genre", "at least one genre must be provided")
+		//v.Check(recordGenre, "genre", "at least one genre must be selected")
+	}
 	//for _, r := range recordGenre {
 	//	v.Check(r.GenreID, "genre", "at least one genre must be selected")
 	//
@@ -98,27 +107,48 @@ type RecordModel struct {
 }
 
 // CreateRecord creates a new record in the record table
-func (m RecordModel) CreateRecord(record *Record, recordGenre []RecordGenre) error {
+func (m RecordModel) CreateRecord(record *Record, recordGenre []RecordGenre,
+	artist []RecordArtist) error {
 	q := `WITH the_record AS (
     	INSERT INTO records (title, label, year, cover) VALUES ($1, $2, $3, $4) RETURNING record_id
-	) 
-	INSERT INTO record_genres (record_id, genre_id) VALUES `
+	),
+	genre AS (INSERT INTO record_genres (record_id, genre_id) VALUES `
 
 	args := []interface{}{record.Title, record.Label, record.Year, record.Cover}
+
+	var nc int
 
 	for i, v := range recordGenre {
 		args = append(args, v.GenreID)
 		numFields := 1
-		n := (i * numFields) + 4
+		nc = (i * numFields) + 4
 
 		for j := 0; j < numFields; j++ {
-			q += `((SELECT record_id from the_record),` + `$` + strconv.Itoa(n+j+1) + `),`
+			q += `((SELECT record_id from the_record),` + `$` + strconv.Itoa(nc+j+1) + `),`
+		}
+		q = q[:len(q)-1] + `,`
+	}
+	q = q[:len(q)-1]
+
+	q += ` RETURNING record_id)`
+
+	q += ` INSERT INTO record_artists (record_id, artist_id) VALUES `
+
+	for index, j := range artist {
+		args = append(args, j.ArtistID)
+		numFields := 1
+		nk := (index * numFields) + nc + 1
+
+		for k := 0; k < numFields; k++ {
+			q += `((SELECT record_id from the_record),` + `$` + strconv.Itoa(nk+k+1) + `),`
 		}
 		q = q[:len(q)-1] + `,`
 	}
 	q = q[:len(q)-1]
 
 	q += ` RETURNING record_id`
+
+	fmt.Println(q)
 
 	return m.DB.QueryRow(q, args...).Scan(&record.RecordID)
 }

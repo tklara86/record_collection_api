@@ -13,12 +13,13 @@ import (
 func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Request) {
 
 	var input struct {
-		RecordID     int64              `json:"record_id"`
-		Title        string             `json:"title"`
-		Label        string             `json:"label"`
-		Year         int32              `json:"year"`
-		Cover        string             `json:"cover"`
-		RecordGenres []data.RecordGenre `json:"record_genres"`
+		RecordID      int64               `json:"record_id"`
+		Title         string              `json:"title"`
+		Label         string              `json:"label"`
+		Year          int32               `json:"year"`
+		Cover         string              `json:"cover"`
+		RecordGenres  []data.RecordGenre  `json:"record_genres"`
+		RecordArtists []data.RecordArtist `json:"record_artists"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -33,9 +34,10 @@ func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	// mock the ids from form
-	genreSlices := []int64{2, 3, 1}
+	genreSlices := []int64{1, 2, 3}
 
 	var genres []data.RecordGenre
+	var artists []data.RecordArtist
 
 	for _, genreId := range genreSlices {
 
@@ -44,15 +46,23 @@ func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Reque
 				GenreID: genreId,
 			},
 		}
+
+		a := []data.RecordArtist{
+			{
+				ArtistID: genreId,
+			},
+		}
 		genres = append(genres, d...)
+		artists = append(artists, a...)
 	}
 
 	record := &data.Record{
-		Title:        input.Title,
-		Label:        input.Label,
-		Year:         input.Year,
-		Cover:        input.Cover,
-		RecordGenres: genres,
+		Title:         input.Title,
+		Label:         input.Label,
+		Year:          input.Year,
+		Cover:         input.Cover,
+		RecordGenres:  genres,
+		RecordArtists: artists,
 	}
 
 	v := validator.New()
@@ -62,7 +72,7 @@ func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = app.models.Records.CreateRecord(record, record.RecordGenres)
+	err = app.models.Records.CreateRecord(record, record.RecordGenres, record.RecordArtists)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
