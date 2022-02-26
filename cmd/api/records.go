@@ -9,6 +9,7 @@ import (
 )
 
 //INSERT INTO genres (genre_name) VALUES ('Classical'), ('Jazz'), ('Rock');
+//INSERT INTO artists (name) VALUES ('Krzysztof Penderecki'), ('Don Cherry'), ('Karlheinz Stockhausen');
 // createRecordHandler creates new record
 func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -35,6 +36,7 @@ func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Reque
 
 	// mock the ids from form
 	genreSlices := []int64{1, 2, 3}
+	artistSlice := []int64{1, 2, 3}
 
 	var genres []data.RecordGenre
 	var artists []data.RecordArtist
@@ -47,12 +49,17 @@ func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Reque
 			},
 		}
 
+		genres = append(genres, d...)
+	}
+
+	for _, artistId := range artistSlice {
+
 		a := []data.RecordArtist{
 			{
-				ArtistID: genreId,
+				ArtistID: artistId,
 			},
 		}
-		genres = append(genres, d...)
+
 		artists = append(artists, a...)
 	}
 
