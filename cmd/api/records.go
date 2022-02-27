@@ -32,19 +32,19 @@ func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	var genres []data.RecordGenre
-	var artists []data.RecordArtist
+	var recordGenres []data.RecordGenre
+	var recordArtists []data.RecordArtist
 
-	genres = append(genres, input.RecordGenres...)
-	artists = append(artists, input.RecordArtists...)
+	recordGenres = append(recordGenres, input.RecordGenres...)
+	recordArtists = append(recordArtists, input.RecordArtists...)
 
 	record := &data.Record{
 		Title:         input.Title,
 		Label:         input.Label,
 		Year:          input.Year,
 		Cover:         input.Cover,
-		RecordGenres:  genres,
-		RecordArtists: artists,
+		RecordGenres:  recordGenres,
+		RecordArtists: recordArtists,
 	}
 
 	v := validator.New()
@@ -78,6 +78,9 @@ func (app *application) showRecordHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 	record, err := app.models.Records.GetRecord(id)
+	artists, err := app.models.Records.GetRecordArtists(id)
+	genres, err := app.models.Records.GetRecordGenres(id)
+
 	if err != nil {
 		switch {
 		case errors.Is(err, data.ErrorRecordNotFound):
@@ -86,6 +89,22 @@ func (app *application) showRecordHandler(w http.ResponseWriter, r *http.Request
 			app.serverErrorResponse(w, r, err)
 		}
 		return
+	}
+
+	for _, a := range artists {
+		ra := &data.Artists{
+			Name: a.Name,
+		}
+
+		record.Artists = append(record.Artists, *ra)
+	}
+
+	for _, g := range genres {
+		rg := &data.Genres{
+			GenreName: g.GenreName,
+		}
+
+		record.Genres = append(record.Genres, *rg)
 	}
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"record": record}, nil)

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"github.com/tklara86/record_collection_api/internal/validator"
+	"log"
 	"strconv"
 	"time"
 )
@@ -19,6 +20,8 @@ type Record struct {
 	UpdatedAt     time.Time      `json:"updated_at"`
 	RecordGenres  []RecordGenre  `json:"record_genres,omitempty"`
 	RecordArtists []RecordArtist `json:"record_artist,omitempty"`
+	Artists       []Artists      `json:"artists,omitempty"`
+	Genres        []Genres       `json:"genres,omitempty"`
 }
 
 // Genres model
@@ -32,8 +35,7 @@ type Genres struct {
 // Artists model
 type Artists struct {
 	ArtistID  int64     `json:"artist_id"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
+	Name      string    `json:"name"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
@@ -125,29 +127,6 @@ func (m RecordModel) CreateRecord(record *Record, recordGenre []RecordGenre,
 	return m.DB.QueryRow(q, args...).Scan(&record.RecordID)
 }
 
-// CreateGenreRecords creates genre records in the record_genres table
-func (m RecordModel) CreateGenreRecords(recordGenre []RecordGenre) error {
-	q := `INSERT INTO record_genres(record_id,genre_id) VALUES `
-
-	var args []interface{}
-
-	for i, v := range recordGenre {
-		args = append(args, v.RecordID, v.GenreID)
-		numFields := 2
-		n := i * numFields
-
-		q += `(`
-		for j := 0; j < numFields; j++ {
-			q += `$` + strconv.Itoa(n+j+1) + `,`
-		}
-		q = q[:len(q)-1] + `),`
-
-	}
-	q = q[:len(q)-1]
-
-	return m.DB.QueryRow(q, args...).Scan(recordGenre)
-}
-
 // GetRecord fetches specific record from the record table
 func (m RecordModel) GetRecord(id int64) (*Record, error) {
 	q := `SELECT * FROM 
@@ -169,6 +148,71 @@ func (m RecordModel) GetRecord(id int64) (*Record, error) {
 	}
 
 	return &record, nil
+}
+
+// GetRecordArtists fetch all artists from specific record
+func (m RecordModel) GetRecordArtists(id int64) ([]*Artists, error) {
+	q := `select a.artist_id, a.name from artists a
+		LEFT JOIN record_artists ra ON ra.artist_id = a.artist_id
+		LEFT JOIN records r ON r.record_id = ra.record_id
+		WHERE r.record_id = $1`
+
+	rows, err := m.DB.Query(q, id)
+
+	var artists []*Artists
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrorRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	for rows.Next() {
+		a := &Artists{}
+		err := rows.Scan(&a.ArtistID, &a.Name)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		artists = append(artists, a)
+	}
+	return artists, nil
+}
+
+func (m RecordModel) GetRecordGenres(id int64) ([]*Genres, error) {
+	q := `select g.genre_name from genres g 
+		LEFT JOIN record_genres rg ON rg.genre_id = g.genre_id
+		LEFT JOIN records r ON r.record_id = rg.record_id
+		WHERE r.record_id = $1`
+
+	rows, err := m.DB.Query(q, id)
+
+	var genres []*Genres
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrorRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	for rows.Next() {
+		g := &Genres{}
+		err := rows.Scan(&g.GenreName)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		genres = append(genres, g)
+	}
+
+	return genres, nil
+
 }
 
 // UpdateRecord updates specific record in the record table
