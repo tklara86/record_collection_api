@@ -16,8 +16,8 @@ type Record struct {
 	Label         string         `json:"label"`
 	Year          int32          `json:"year"`
 	Cover         string         `json:"cover"`
-	CreatedAt     time.Time      `json:"created_at"`
-	UpdatedAt     time.Time      `json:"updated_at"`
+	CreatedAt     time.Time      `json:"created_at,omitempty"`
+	UpdatedAt     time.Time      `json:"updated_at,omitempty"`
 	RecordGenres  []RecordGenre  `json:"record_genres,omitempty"`
 	RecordArtists []RecordArtist `json:"record_artist,omitempty"`
 	Artists       []Artists      `json:"artists,omitempty"`
@@ -182,6 +182,7 @@ func (m RecordModel) GetRecordArtists(id int64) ([]*Artists, error) {
 	return artists, nil
 }
 
+// GetRecordGenres fetches all genres from specific record
 func (m RecordModel) GetRecordGenres(id int64) ([]*Genres, error) {
 	q := `select g.genre_name from genres g 
 		LEFT JOIN record_genres rg ON rg.genre_id = g.genre_id
