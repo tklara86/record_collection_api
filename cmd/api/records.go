@@ -8,8 +8,6 @@ import (
 	"net/http"
 )
 
-//INSERT INTO genres (genre_name) VALUES ('Classical'), ('Jazz'), ('Rock');
-//INSERT INTO artists (name) VALUES ('Krzysztof Penderecki'), ('Don Cherry'), ('Karlheinz Stockhausen');
 // createRecordHandler creates new record
 func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -34,34 +32,11 @@ func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// mock the ids from form
-	genreSlices := []int64{1, 2, 3}
-	artistSlice := []int64{1, 2, 3}
-
 	var genres []data.RecordGenre
 	var artists []data.RecordArtist
 
-	for _, genreId := range genreSlices {
-
-		d := []data.RecordGenre{
-			{
-				GenreID: genreId,
-			},
-		}
-
-		genres = append(genres, d...)
-	}
-
-	for _, artistId := range artistSlice {
-
-		a := []data.RecordArtist{
-			{
-				ArtistID: artistId,
-			},
-		}
-
-		artists = append(artists, a...)
-	}
+	genres = append(genres, input.RecordGenres...)
+	artists = append(artists, input.RecordArtists...)
 
 	record := &data.Record{
 		Title:         input.Title,
@@ -74,7 +49,7 @@ func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Reque
 
 	v := validator.New()
 
-	if data.ValidateRecord(v, record, record.RecordGenres); !v.Valid() {
+	if data.ValidateRecord(v, record, record.RecordGenres, record.RecordArtists); !v.Valid() {
 		app.failedValidationResponse(w, r, v.Errors)
 		return
 	}

@@ -3,27 +3,10 @@ package data
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"github.com/tklara86/record_collection_api/internal/validator"
 	"strconv"
 	"time"
 )
-
-//WITH the_record AS (
-//INSERT INTO records (title, label, year, cover) VALUES ('sdsd', 'sdsd', 1987, 'sdsdsd') RETURNING record_id
-//),
-//
-//genre AS (
-//INSERT INTO record_genres (record_id, genre_id) VALUES
-//((SELECT record_id from the_record), 1),
-//((SELECT record_id from the_record), 2),
-//((SELECT record_id from the_record), 3)
-//)
-//
-//INSERT INTO record_artists (record_id,artist_id) VALUES
-//((SELECT record_id from the_record), 1),
-//((SELECT record_id from the_record), 2),
-//((SELECT record_id from the_record), 3);
 
 // Record model
 type Record struct {
@@ -74,7 +57,8 @@ type RecordArtist struct {
 }
 
 // ValidateRecord validates record fields
-func ValidateRecord(v *validator.Validator, record *Record, recordGenre []RecordGenre) {
+func ValidateRecord(v *validator.Validator, record *Record, recordGenre []RecordGenre,
+	recordArtist []RecordArtist) {
 	v.Check(record.Title != "", "title", "must be provided")
 	v.Check(len(record.Title) <= 500, "title", "must not be more than 500 bytes long")
 
@@ -83,23 +67,13 @@ func ValidateRecord(v *validator.Validator, record *Record, recordGenre []Record
 	v.Check(record.Cover != "", "cover", "must be provided")
 
 	if len(recordGenre) < 1 {
-		v.AddError("genre", "at least one genre must be provided")
-		//v.Check(recordGenre, "genre", "at least one genre must be selected")
+		v.AddError("genre", "Please select genre(s)")
 	}
-	//for _, r := range recordGenre {
-	//	v.Check(r.GenreID, "genre", "at least one genre must be selected")
-	//
-	//}
-}
+	if len(recordArtist) < 1 {
+		v.AddError("artist", "Please select artist(s)")
+	}
 
-// ValidateRecordGenre validates record genres fields
-//func ValidateRecordGenre(v *validator.Validator, recordGenre []RecordGenre) {
-//
-//	for _, r := range recordGenre {
-//		v.CheckForID(r.GenreID, "genre", "at least one genre must be selected")
-//	}
-//
-//}
+}
 
 // RecordModel a struct type which wraps a sql.DB connection pool.
 type RecordModel struct {
@@ -147,8 +121,6 @@ func (m RecordModel) CreateRecord(record *Record, recordGenre []RecordGenre,
 	q = q[:len(q)-1]
 
 	q += ` RETURNING record_id`
-
-	fmt.Println(q)
 
 	return m.DB.QueryRow(q, args...).Scan(&record.RecordID)
 }
