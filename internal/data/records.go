@@ -13,8 +13,7 @@ import (
 type Record struct {
 	RecordID      int64          `json:"record_id"`
 	Title         string         `json:"title"`
-	Label         string         `json:"label"`
-	Year          int32          `json:"year"`
+	Release       string         `json:"release"`
 	Cover         string         `json:"cover"`
 	CreatedAt     time.Time      `json:"created_at,omitempty"`
 	UpdatedAt     time.Time      `json:"updated_at,omitempty"`
@@ -22,6 +21,22 @@ type Record struct {
 	RecordArtists []RecordArtist `json:"record_artist,omitempty"`
 	Artists       []Artists      `json:"artists,omitempty"`
 	Genres        []Genres       `json:"genres,omitempty"`
+}
+
+// Label model
+type Label struct {
+	ID        int64     `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// LabelCatalogueNumber model
+type LabelCatalogueNumber struct {
+	ID        int64     `json:"id"`
+	LabelID   int64     `json:"label_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // Genres model
@@ -40,11 +55,30 @@ type Artists struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// Tracklist model
+type Tracklist struct {
+	ID        int64     `json:"id"`
+	Position  string    `json:"position"`
+	Title     string    `json:"title"`
+	Duration  string    `json:"duration"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
 // RecordGenre model
 type RecordGenre struct {
 	ID        int64     `json:"id"`
 	RecordID  int64     `json:"record_id"`
 	GenreID   int64     `json:"genre_id"`
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+}
+
+// RecordLabel model
+type RecordLabel struct {
+	ID        int64     `json:"id"`
+	RecordID  int64     `json:"record_id"`
+	LabelID   int64     `json:"label_id"`
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
 }
@@ -58,14 +92,37 @@ type RecordArtist struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// RecordTracklist model
+type RecordTracklist struct {
+	ID          int64     `json:"id"`
+	RecordID    int64     `json:"record_id"`
+	TracklistID int64     `json:"tracklist_id"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
+// RecordTracklistArtist model
+type RecordTracklistArtist struct {
+	ID                int64 `json:"id"`
+	RecordTracklistID int64 `json:"record_tracklist_id"`
+	ArtistID          int64 `json:"artist_id"`
+}
+
+// RecordImage model
+type RecordImage struct {
+	ID       int64  `json:"id"`
+	RecordID int64  `json:"record_id"`
+	Image    string `json:"image"`
+}
+
 // ValidateRecord validates record fields
 func ValidateRecord(v *validator.Validator, record *Record, recordGenre []RecordGenre,
 	recordArtist []RecordArtist) {
 	v.Check(record.Title != "", "title", "must be provided")
 	v.Check(len(record.Title) <= 500, "title", "must not be more than 500 bytes long")
 
-	v.Check(record.Label != "", "label", "must be provided")
-	v.Check(record.Year != 0, "year", "must be provided")
+	//v.Check(record.Label != "", "label", "must be provided")
+	v.Check(record.Release != "", "release", "must be provided")
 	v.Check(record.Cover != "", "cover", "must be provided")
 
 	if len(recordGenre) < 1 {
@@ -86,18 +143,18 @@ type RecordModel struct {
 func (m RecordModel) CreateRecord(record *Record, recordGenre []RecordGenre,
 	artist []RecordArtist) error {
 	q := `WITH the_record AS (
-    	INSERT INTO records (title, label, year, cover) VALUES ($1, $2, $3, $4) RETURNING record_id
+    	INSERT INTO records (title, release, cover) VALUES ($1, $2, $3) RETURNING record_id
 	),
 	genre AS (INSERT INTO record_genres (record_id, genre_id) VALUES `
 
-	args := []interface{}{record.Title, record.Label, record.Year, record.Cover}
+	args := []interface{}{record.Title, record.Release, record.Cover}
 
 	var nc int
 
 	for i, v := range recordGenre {
 		args = append(args, v.GenreID)
 		numFields := 1
-		nc = (i * numFields) + 4
+		nc = (i * numFields) + 3
 
 		for j := 0; j < numFields; j++ {
 			q += `((SELECT record_id from the_record),` + `$` + strconv.Itoa(nc+j+1) + `),`
@@ -135,8 +192,8 @@ func (m RecordModel) GetRecord(id int64) (*Record, error) {
 
 	var record Record
 
-	err := m.DB.QueryRow(q, id).Scan(&record.RecordID, &record.Title, &record.Label,
-		&record.Year, &record.Cover, &record.CreatedAt, &record.UpdatedAt)
+	err := m.DB.QueryRow(q, id).Scan(&record.RecordID, &record.Title,
+		&record.Release, &record.Cover, &record.CreatedAt, &record.UpdatedAt)
 
 	if err != nil {
 		switch {

@@ -14,8 +14,7 @@ func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Reque
 	var input struct {
 		RecordID      int64               `json:"record_id"`
 		Title         string              `json:"title"`
-		Label         string              `json:"label"`
-		Year          int32               `json:"year"`
+		Release       string              `json:"release"`
 		Cover         string              `json:"cover"`
 		RecordGenres  []data.RecordGenre  `json:"record_genres"`
 		RecordArtists []data.RecordArtist `json:"record_artists"`
@@ -40,8 +39,7 @@ func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Reque
 
 	record := &data.Record{
 		Title:         input.Title,
-		Label:         input.Label,
-		Year:          input.Year,
+		Release:       input.Release,
 		Cover:         input.Cover,
 		RecordGenres:  recordGenres,
 		RecordArtists: recordArtists,
