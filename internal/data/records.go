@@ -11,24 +11,25 @@ import (
 
 // Record model
 type Record struct {
-	RecordID               int64                   `json:"record_id"`
-	Title                  string                  `json:"title"`
-	Release                string                  `json:"release"`
-	Cover                  string                  `json:"cover"`
-	Status                 string                  `json:"status"`
-	CreatedAt              time.Time               `json:"created_at,omitempty"`
-	UpdatedAt              time.Time               `json:"updated_at,omitempty"`
-	RecordGenres           []RecordGenre           `json:"record_genres,omitempty"`
-	RecordArtists          []RecordArtist          `json:"record_artist,omitempty"`
-	RecordLabels           []RecordLabel           `json:"record_labels,omitempty"`
-	LabelCatalogueNumbers  []LabelCatalogueNumber  `json:"label_catalogue_numbers,omitempty"`
-	RecordTracklists       []RecordTracklist       `json:"record_tracklists,omitempty"`
-	RecordTracklistArtists []RecordTracklistArtist `json:"record_tracklist_artists,omitempty"`
-	RecordImages           []RecordImage           `json:"record_images,omitempty"`
-	Artists                []Artists               `json:"artists,omitempty"`
-	Genres                 []Genres                `json:"genres,omitempty"`
-	Labels                 []Labels                `json:"labels,omitempty"`
-	Tracklists             []Tracklists            `json:"tracklists,omitempty"`
+	RecordID                      int64                          `json:"record_id"`
+	Title                         string                         `json:"title"`
+	Release                       string                         `json:"release"`
+	Cover                         string                         `json:"cover"`
+	Status                        string                         `json:"status"`
+	CreatedAt                     time.Time                      `json:"created_at,omitempty"`
+	UpdatedAt                     time.Time                      `json:"updated_at,omitempty"`
+	RecordGenres                  []RecordGenre                  `json:"record_genres,omitempty"`
+	RecordArtists                 []RecordArtist                 `json:"record_artist,omitempty"`
+	RecordLabels                  []RecordLabel                  `json:"record_labels,omitempty"`
+	LabelCatalogueNumbers         []LabelCatalogueNumber         `json:"label_catalogue_numbers,omitempty"`
+	LabelCatalogueNumbersToRecord []LabelCatalogueNumberToRecord `json:"label_catalogue_numbers_to_record,omitempty"`
+	RecordTracklists              []RecordTracklist              `json:"record_tracklists,omitempty"`
+	RecordTracklistArtists        []RecordTracklistArtist        `json:"record_tracklist_artists,omitempty"`
+	RecordImages                  []RecordImage                  `json:"record_images,omitempty"`
+	Artists                       []Artists                      `json:"artists,omitempty"`
+	Genres                        []Genres                       `json:"genres,omitempty"`
+	Labels                        []Labels                       `json:"labels,omitempty"`
+	Tracklists                    []Tracklists                   `json:"tracklists,omitempty"`
 }
 
 // Labels model
@@ -39,7 +40,7 @@ type Labels struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// LabelCatalogueNumbers model
+// LabelCatalogueNumber model
 type LabelCatalogueNumber struct {
 	ID              int64     `json:"id"`
 	LabelID         int64     `json:"label_id"`
@@ -48,20 +49,11 @@ type LabelCatalogueNumber struct {
 	UpdatedAt       time.Time `json:"updated_at"`
 }
 
-// Genres model
-type Genres struct {
-	GenreID   int64     `json:"genre_id"`
-	GenreName string    `json:"genre_name"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-// Artists model
-type Artists struct {
-	ArtistID  int64     `json:"artist_id"`
-	Name      string    `json:"name"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+// LabelCatalogueNumberToRecord model
+type LabelCatalogueNumberToRecord struct {
+	ID                int64 `json:"id"`
+	CatalogueNumberID int64 `json:"catalogue_number_id"`
+	RecordID          int64 `json:"record_id"`
 }
 
 // Tracklists model
@@ -74,15 +66,6 @@ type Tracklists struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// RecordGenre model
-type RecordGenre struct {
-	ID        int64     `json:"id"`
-	RecordID  int64     `json:"record_id"`
-	GenreID   int64     `json:"genre_id"`
-	CreatedAt time.Time `json:"created_at,omitempty"`
-	UpdatedAt time.Time `json:"updated_at,omitempty"`
-}
-
 // RecordLabel model
 type RecordLabel struct {
 	ID        int64     `json:"id"`
@@ -90,15 +73,6 @@ type RecordLabel struct {
 	LabelID   int64     `json:"label_id"`
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	UpdatedAt time.Time `json:"updated_at,omitempty"`
-}
-
-// RecordArtist model
-type RecordArtist struct {
-	ID        int64     `json:"id"`
-	ArtistID  int64     `json:"artist_id"`
-	RecordID  int64     `json:"record_id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
 }
 
 // RecordTracklist model
