@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS label_catalogue_number_to_record;
 DROP TABLE IF EXISTS label_catalogue_number;
 DROP TABLE IF EXISTS record_images;
 DROP TABLE IF EXISTS record_tracklists_artists;

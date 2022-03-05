@@ -11,32 +11,41 @@ import (
 
 // Record model
 type Record struct {
-	RecordID      int64          `json:"record_id"`
-	Title         string         `json:"title"`
-	Release       string         `json:"release"`
-	Cover         string         `json:"cover"`
-	CreatedAt     time.Time      `json:"created_at,omitempty"`
-	UpdatedAt     time.Time      `json:"updated_at,omitempty"`
-	RecordGenres  []RecordGenre  `json:"record_genres,omitempty"`
-	RecordArtists []RecordArtist `json:"record_artist,omitempty"`
-	Artists       []Artists      `json:"artists,omitempty"`
-	Genres        []Genres       `json:"genres,omitempty"`
+	RecordID               int64                   `json:"record_id"`
+	Title                  string                  `json:"title"`
+	Release                string                  `json:"release"`
+	Cover                  string                  `json:"cover"`
+	Status                 string                  `json:"status"`
+	CreatedAt              time.Time               `json:"created_at,omitempty"`
+	UpdatedAt              time.Time               `json:"updated_at,omitempty"`
+	RecordGenres           []RecordGenre           `json:"record_genres,omitempty"`
+	RecordArtists          []RecordArtist          `json:"record_artist,omitempty"`
+	RecordLabels           []RecordLabel           `json:"record_labels,omitempty"`
+	LabelCatalogueNumbers  []LabelCatalogueNumber  `json:"label_catalogue_numbers,omitempty"`
+	RecordTracklists       []RecordTracklist       `json:"record_tracklists,omitempty"`
+	RecordTracklistArtists []RecordTracklistArtist `json:"record_tracklist_artists,omitempty"`
+	RecordImages           []RecordImage           `json:"record_images,omitempty"`
+	Artists                []Artists               `json:"artists,omitempty"`
+	Genres                 []Genres                `json:"genres,omitempty"`
+	Labels                 []Labels                `json:"labels,omitempty"`
+	Tracklists             []Tracklists            `json:"tracklists,omitempty"`
 }
 
-// Label model
-type Label struct {
+// Labels model
+type Labels struct {
 	ID        int64     `json:"id"`
 	Name      string    `json:"name"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// LabelCatalogueNumber model
+// LabelCatalogueNumbers model
 type LabelCatalogueNumber struct {
-	ID        int64     `json:"id"`
-	LabelID   int64     `json:"label_id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID              int64     `json:"id"`
+	LabelID         int64     `json:"label_id"`
+	CatalogueNumber string    `json:"catalogue_number"`
+	CreatedAt       time.Time `json:"created_at"`
+	UpdatedAt       time.Time `json:"updated_at"`
 }
 
 // Genres model
@@ -55,8 +64,8 @@ type Artists struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// Tracklist model
-type Tracklist struct {
+// Tracklists model
+type Tracklists struct {
 	ID        int64     `json:"id"`
 	Position  string    `json:"position"`
 	Title     string    `json:"title"`
@@ -140,21 +149,25 @@ type RecordModel struct {
 }
 
 // CreateRecord creates a new record in the record table
-func (m RecordModel) CreateRecord(record *Record, recordGenre []RecordGenre,
-	artist []RecordArtist) error {
+func (m RecordModel) CreateRecord(
+	record *Record,
+	recordGenre []RecordGenre,
+	artist []RecordArtist,
+) error {
 	q := `WITH the_record AS (
-    	INSERT INTO records (title, release, cover) VALUES ($1, $2, $3) RETURNING record_id
+    	INSERT INTO records (title, release, cover, status) VALUES ($1, $2, $3, $4
+) RETURNING record_id
 	),
 	genre AS (INSERT INTO record_genres (record_id, genre_id) VALUES `
 
-	args := []interface{}{record.Title, record.Release, record.Cover}
+	args := []interface{}{record.Title, record.Release, record.Cover, record.Status}
 
 	var nc int
 
 	for i, v := range recordGenre {
 		args = append(args, v.GenreID)
 		numFields := 1
-		nc = (i * numFields) + 3
+		nc = (i * numFields) + 4
 
 		for j := 0; j < numFields; j++ {
 			q += `((SELECT record_id from the_record),` + `$` + strconv.Itoa(nc+j+1) + `),`
@@ -193,7 +206,7 @@ func (m RecordModel) GetRecord(id int64) (*Record, error) {
 	var record Record
 
 	err := m.DB.QueryRow(q, id).Scan(&record.RecordID, &record.Title,
-		&record.Release, &record.Cover, &record.CreatedAt, &record.UpdatedAt)
+		&record.Release, &record.Cover, &record.Status, &record.CreatedAt, &record.UpdatedAt)
 
 	if err != nil {
 		switch {
@@ -270,6 +283,38 @@ func (m RecordModel) GetRecordGenres(id int64) ([]*Genres, error) {
 	}
 
 	return genres, nil
+
+}
+
+// GetAllRecords get all records
+func (m RecordModel) GetAllRecords() ([]*Record, error) {
+	q := `SELECT * FROM records WHERE status = 'published'`
+
+	rows, err := m.DB.Query(q)
+
+	var records []*Record
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrorRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	for rows.Next() {
+		r := &Record{}
+		err := rows.Scan(&r.RecordID, &r.Title, &r.Release, &r.Cover, &r.Status, &r.UpdatedAt,
+			&r.CreatedAt)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		records = append(records, r)
+	}
+
+	return records, nil
 
 }
 

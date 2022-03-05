@@ -1,8 +1,11 @@
+CREATE TYPE record_status AS ENUM ('published', 'draft');
+
 CREATE TABLE "records" (
                            "record_id" SERIAL PRIMARY KEY,
                            "title" varchar NOT NULL,
                            "release" varchar NOT NULL,
                            "cover" varchar NOT NULL,
+                           "status" record_status NOT NULL,
                            "created_at" timestamptz NOT NULL DEFAULT (now()),
                            "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
@@ -20,6 +23,14 @@ CREATE TABLE "label_catalogue_number" (
                                           "catalogue_number" varchar NOT NULL,
                                           "created_at" timestamptz NOT NULL DEFAULT (now()),
                                           "updated_at" timestamptz NOT NULL DEFAULT (now())
+);
+
+CREATE TABLE "label_catalogue_number_to_record" (
+                                                    "id" SERIAL PRIMARY KEY,
+                                                    "catalogue_number_id" int,
+                                                    "record_id" int,
+                                                    "created_at" timestamptz NOT NULL DEFAULT (now()),
+                                                    "updated_at" timestamptz NOT NULL DEFAULT (now())
 );
 
 CREATE TABLE "record_labels" (
@@ -91,7 +102,14 @@ CREATE TABLE "record_images" (
                                  "image" varchar NOT NULL
 );
 
+
+
+
 ALTER TABLE "label_catalogue_number" ADD FOREIGN KEY ("label_id") REFERENCES "labels" ("id");
+
+ALTER TABLE "label_catalogue_number_to_record" ADD FOREIGN KEY ("catalogue_number_id") REFERENCES "label_catalogue_number" ("id");
+
+ALTER TABLE "label_catalogue_number_to_record" ADD FOREIGN KEY ("record_id") REFERENCES "records" ("record_id");
 
 ALTER TABLE "record_labels" ADD FOREIGN KEY ("record_id") REFERENCES "records" ("record_id");
 

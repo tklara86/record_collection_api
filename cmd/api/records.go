@@ -16,6 +16,7 @@ func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Reque
 		Title         string              `json:"title"`
 		Release       string              `json:"release"`
 		Cover         string              `json:"cover"`
+		Status        string              `json:"status"`
 		RecordGenres  []data.RecordGenre  `json:"record_genres"`
 		RecordArtists []data.RecordArtist `json:"record_artists"`
 	}
@@ -41,6 +42,7 @@ func (app *application) createRecordHandler(w http.ResponseWriter, r *http.Reque
 		Title:         input.Title,
 		Release:       input.Release,
 		Cover:         input.Cover,
+		Status:        input.Status,
 		RecordGenres:  recordGenres,
 		RecordArtists: recordArtists,
 	}
@@ -106,6 +108,26 @@ func (app *application) showRecordHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"record": record}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+
+}
+
+func (app *application) showRecordsHandler(w http.ResponseWriter, r *http.Request) {
+	records, err := app.models.Records.GetAllRecords()
+
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrorRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"records": records}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 	}
